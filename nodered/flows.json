@@ -1,0 +1,1123 @@
+[
+    {
+        "id": "tab_corolla_car_system",
+        "type": "tab",
+        "label": "🚗 Corolla Smart Car System",
+        "disabled": false,
+        "info": "Isolated Unified Flow for Corolla Vehicle Control, Dashboard, Telegram, WhatsApp & ThingSpeak"
+    },
+    {
+        "id": "node_init_pulse_inject",
+        "type": "inject",
+        "z": "tab_corolla_car_system",
+        "name": "Init & Periodic Pulse (15s)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "15",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "0.2",
+        "topic": "",
+        "payload": "PULSE",
+        "payloadType": "str",
+        "x": 2780,
+        "y": 1420,
+        "wires": [
+            [
+                "node_corolla_thingspeak_prep"
+            ]
+        ]
+    },
+    {
+        "id": "node_corolla_state_engine",
+        "type": "function",
+        "z": "tab_corolla_car_system",
+        "name": "Unified State & Notification Engine",
+        "func": "var st = global.get('corolla_status') || {\n    state: \"VEHICLE_OFF\",\n    engine: false,\n    ignition: false,\n    red: false,\n    blue: false,\n    highBeam: false,\n    headlights: false,\n    door1: true,\n    door2: true,\n    starts: 0,\n    vibrationAlert: false,\n    vibrationCount: 0,\n    starterBlocked: false,\n    temperature: 28,\n    light: 45,\n    appEnabled: true\n};\n\nvar cmd = null;\nvar notifyText = \"\";\nvar emailSubject = \"\";\nvar emailBody = \"\";\nvar themeColor = \"#38bdf8\";\n\n// 0. التحقق من أمر زر تفعيل/إيقاف صلاحية التطبيق من التليجرام\nif (typeof msg.payload === 'string') {\n    var rawInput = msg.payload.trim();\n    if (rawInput === 'cmd_toggle_app') {\n        st.appEnabled = !st.appEnabled;\n        themeColor = st.appEnabled ? \"#22c55e\" : \"#ef4444\";\n        notifyText = st.appEnabled\n            ? \"✅ *[ صلاحية التطبيق ]*\\n\\n• تم *تفعيل* التحكم بالسيارة عبر التطبيق بنجاح.\"\n            : \"❌ *[ صلاحية التطبيق ]*\\n\\n• تم *إيقاف* صلاحية التحكم عبر التطبيق وحظر الأوامر!\";\n       \n        global.set('corolla_status', st);\n    }\n}\n\n// 🛑 [الشرط الأمني الصارم]: إذا كانت صلاحية التطبيق موقوفة، وجاء أي أمر من التطبيق (وليس من تليجرام)، يتم حظره فوراً\nvar isFromTelegram = (typeof msg.payload === 'string' && msg.payload.trim() === 'cmd_toggle_app') || msg.chatId;\n\nif (!st.appEnabled && !isFromTelegram) {\n    themeColor = \"#ef4444\";\n    notifyText = \"⚠️ *[ محاولة وصول مرفوضة ]*\\n\\n❌ عذراً، صلاحية التحكم عبر التطبيق *موقفة حالياً* من قبل مالك السيارة عبر التليجرام.\";\n    global.set('corolla_status', st);\n   \n    var tgChatId = msg.chatId || (msg.payload && msg.payload.chatId) || \"YOUR_TELEGRAM_CHAT_ID\";\n    var blockedTg = {\n        payload: {\n            chatId: tgChatId,\n            type: \"message\",\n            content: notifyText,\n            options: {\n                parse_mode: \"Markdown\",\n                reply_markup: {\n                    inline_keyboard: [\n                        [{ text: st.appEnabled ? \"🟢 التطبيق: (مفعل - اضغط للإيقاف)\" : \"🔴 التطبيق: (موقوف - اضغط للتفعيل)\", callback_data: \"cmd_toggle_app\" }],\n                        [{ text: \"🚗 تشغيل المحرك\", callback_data: \"cmd_i\" }, { text: \"⚡ سويتش الإشعال\", callback_data: \"cmd_s\" }],\n                        [{ text: \"🛑 إطفاء المحرك\", callback_data: \"cmd_o\" }, { text: \"📊 تقرير الحالة\", callback_data: \"cmd_status\" }],\n                        [{ text: \"💡 كشافات رئيسية\", callback_data: \"cmd_l\" }, { text: \"🔦 الضوء العالي\", callback_data: \"cmd_h\" }],\n                        [{ text: \"🔴 إضاءة حمراء\", callback_data: \"cmd_r\" }, { text: \"🔵 إضاءة زرقاء\", callback_data: \"cmd_b\" }],\n                        [{ text: \"🔓 قفل/فتح الأبواب\", callback_data: \"cmd_d\" }, { text: \"🔓 فتح الشنطة\", callback_data: \"cmd_t\" }]\n                    ]\n                }\n            }\n        }\n    };\n    return [null, null, null, blockedTg, null, null];\n}\n\n// 1. استخراج الأوامر بمرونة تامة سواء من الكتابة أو من أزرار التليجرام\nif (typeof msg.payload === 'string' && msg.payload.trim() !== 'cmd_toggle_app') {\n    var raw = msg.payload.trim();\n    if (raw !== 'PULSE' && raw.length > 0) {\n        var upperRaw = raw.toUpperCase();\n        var lowerRaw = raw.toLowerCase();\n       \n        if (upperRaw === \"START\" || upperRaw === \"سلف\" || upperRaw === \"تشغيل\" || lowerRaw === \"cmd_s\") {\n            cmd = \"S\";\n        } else if (upperRaw === \"IGNITION\" || upperRaw === \"سويتش\" || upperRaw === \"تهيئة\" || lowerRaw === \"cmd_i\") {\n            cmd = \"I\";\n        } else if (upperRaw === \"OFF\" || upperRaw === \"إطفاء\" || upperRaw === \"اطفاء\" || upperRaw === \"16\" || lowerRaw === \"cmd_o\") {\n            cmd = \"O\";\n        } else if (upperRaw === \"DOOR\" || upperRaw === \"LOCK\" || upperRaw === \"قفل\" || lowerRaw === \"cmd_d\") {\n            cmd = \"D\";\n        } else if (upperRaw === \"TRUNK\" || upperRaw === \"شنطة\" || lowerRaw === \"cmd_t\") {\n            cmd = \"T\";\n        } else if (upperRaw === \"HEADLIGHTS\" || upperRaw === \"نور\" || upperRaw === \"كشافات\" || lowerRaw === \"cmd_l\") {\n            cmd = \"L\";\n        } else if (upperRaw === \"HIGHBEAM\" || upperRaw === \"عالي\" || lowerRaw === \"cmd_h\") {\n            cmd = \"H\";\n        } else if (upperRaw === \"RED\" || upperRaw === \"احمر\" || upperRaw === \"أحمر\" || lowerRaw === \"cmd_r\") {\n            cmd = \"R\";\n        } else if (upperRaw === \"BLUE\" || upperRaw === \"ازرق\" || upperRaw === \"أزرق\" || lowerRaw === \"cmd_b\") {\n            cmd = \"B\";\n        } else if (upperRaw === \"STATUS\" || upperRaw === \"حالة\" || upperRaw === \"تقرير\" || lowerRaw === \"cmd_status\") {\n            cmd = \"STATUS\";\n        } else if (raw === 's') {\n            cmd = 's';\n        } else {\n            cmd = raw.length === 1 ? raw.toUpperCase() : raw;\n        }\n    }\n} else if (typeof msg.payload === 'number') {\n    if (msg.payload === 16) {\n        cmd = \"O\";\n    }\n} else if (typeof msg.payload === 'boolean') {\n    var top = (msg.topic || \"\").toUpperCase();\n    if (top.includes(\"START\")) cmd = \"S\";\n    else if (top.includes(\"OFF\")) cmd = \"O\";\n    else if (top.includes(\"RED\")) cmd = \"R\";\n    else if (top.includes(\"BLUE\")) cmd = \"B\";\n    else if (top.includes(\"LIGHT\") || top.includes(\"HEADLIGHT\")) cmd = \"L\";\n    else if (top.includes(\"HIGHBEAM\")) cmd = \"H\";\n    else if (top.includes(\"IGNITION\")) cmd = \"I\";\n    else if (top.includes(\"DOOR\")) cmd = \"D\";\n} else if (msg.payload && typeof msg.payload === 'object') {\n    if (msg.payload.vibrationAlert === true || msg.event === \"vibration\" || msg.topic === \"vibration\") {\n        st.vibrationCount = (st.vibrationCount || 0) + 1;\n        st.vibrationAlert = true;\n        themeColor = \"#eab308\";\n        notifyText = \"🚨 *[تنبيه أمني عاجل]* 🚨\\n\\n\" +\n                     \"⚠️ تم رصد *اهتزاز أو حركة مريبة* بجسم السيارة!\\n\" +\n                     \"🔍 يرجى تفقد أمان المركبة فوراً.\";\n\n        emailSubject = \"🚨 [تحذير أمني] رصد اهتزاز في سيارة Corolla\";\n        emailBody = \"⚠️ تحذير أمني: تم رصد اهتزاز أو محاولة تلاعب بالسيارة الآن!\\n\" +\n            \"• عدد مرات رصد الاهتزاز: \" + st.vibrationCount + \"\\n\" +\n            \"• حالة المنظومة: \" + st.state + \"\\n\" +\n            \"• وقت الرصد: \" + new Date().toLocaleString('ar-YE');\n    } else if (msg.payload.state) {\n        st = Object.assign(st, msg.payload);\n        st.engine = (st.state === \"ENGINE_RUNNING\");\n        st.ignition = (st.state === \"ENGINE_RUNNING\" || st.state === \"COILS_ON\" || st.state === \"IGNITION_ON\");\n        global.set('corolla_status', st);\n        return [{ payload: st }, null, null, null, null, null];\n    } else if (msg.payload.cmd || msg.payload.command || msg.payload.action) {\n        var rawCmd = String(msg.payload.cmd || msg.payload.command || msg.payload.action).trim();\n        cmd = (rawCmd.length === 1 && rawCmd !== 's') ? rawCmd.toUpperCase() : rawCmd;\n    }\n}\n\n// متغير لتحديد ما إذا كان الطلب قادماً من تليجرام كأمر عرض قائمة (مثل /start)\nvar isMenuRequest = false;\nvar normInput = (typeof msg.payload === 'string') ? msg.payload.trim().toLowerCase() : \"\";\nif (normInput === '/start' || normInput === '/menu' || normInput === 'قائمة' || normInput === 'اوامر' || normInput === 'أوامر') {\n    isMenuRequest = true;\n    notifyText = \"🚗 *لوحة التحكم الذكي بسيارة Toyota Corolla:*\\nاختر الأمر المناسب من الأزرار التالية:\";\n    themeColor = \"#38bdf8\";\n}\n\n// 2. معالجة وتحديث الحالات والردود الدقيقة\nif (cmd) {\n    st.vibrationAlert = false;\n\n    if (cmd === 'I') {\n        themeColor = \"#22c55e\";\n        if (st.state === \"VEHICLE_OFF\") {\n            st.state = \"COILS_ON\";\n            st.ignition = true;\n            notifyText = \"⚡ *[ إدارة السويتش — الضغطة الأولى ]*\\n\\n\" +\n                         \"•  *الحالة:* `تم تشغيل الطبلون والبخاخات (المنفذ 22 و 23)`\\n\" +\n                         \"•  الطبلون مستعد ودورة الإشعال جاهزة.\";\n        } else if (st.state === \"COILS_ON\" || st.state === \"ENGINE_RUNNING\") {\n            st.state = \"IGNITION_ON\";\n            st.engine = false;\n            notifyText = \"🔋 *[ وضع السويتش — الضغطة الثانية ]*\\n\\n\" +\n                         \"• 🛑 تم إطفاء البخاخات وإبقاء طاقة الطبلون فقط.\\n\" +\n                         \"•  الكهرباء مستمرة على السويتش.\";\n        } else {\n            st.state = \"VEHICLE_OFF\";\n            st.ignition = false;\n            st.engine = false;\n            notifyText = \"🛑 *[ إيقاف كامل — الضغطة الثالثة ]*\\n\\n\" +\n                         \"•  تم فصل طاقة الطبلون والمنظومة بالكامل.\";\n        }\n    } else if (cmd === 'S') {\n        if (st.state !== \"COILS_ON\") {\n            themeColor = \"#ef4444\";\n            notifyText = \"⚠️ *[ تنبيه أمني للتشغيل ]*\\n\\n\" +\n                         \"❌ *عذراً لا يمكن تشغيل المحرك!* \\n\" +\n                         \"• يرجى أولاً تشغيل الطبلون والبخاخات لتفعيل الطبلون بأمان.\";\n            cmd = null;\n        } else {\n            st.state = \"ENGINE_RUNNING\";\n            st.engine = true;\n            st.ignition = true;\n            st.starts = (st.starts || 0) + 1;\n            themeColor = \"#22c55e\";\n            notifyText = \"🚗 *[ إشعار تشغيل المحرك ]*\\n\\n\" +\n                         \"•  *الحالة:* `تم تشغيل المحرك والسيارة بالكامل بنجاح`\\n\" +\n                         \"•  *إجمالي التشغيلات:* `\" + st.starts + \" مرة`\\n\" +\n                         \"•  *الوقت:* `\" + new Date().toLocaleTimeString('ar-SA') + \"`\";\n\n            emailSubject = \"🚗 إشعار تشغيل محرك سيارة Corolla\";\n            emailBody = \"تم تشغيل محرك السيارة بالكامل بنجاح عبر النظام الذكي.\\n\" +\n                \"• عدد مرات التشغيل الإجمالية: \" + st.starts + \"\\n\" +\n                \"• حالة المحرك: يعمل (RUNNING)\\n\" +\n                \"• وقت التشغيل: \" + new Date().toLocaleString('ar-YE');\n        }\n    } else if (cmd === 'O') {\n        st.state = \"VEHICLE_OFF\";\n        st.engine = false;\n        st.ignition = false;\n        st.highBeam = false;\n        st.headlights = false;\n        st.red = false;\n        st.blue = false;\n        st.vibrationAlert = false;\n        themeColor = \"#ef4444\";\n        notifyText = \"🛑 *[ إطفاء وتأمين شامل ]*\\n\\n\" +\n                     \"•  *حالة السيارة:* `تم إطفاء وتأمين السيارة بالكامل`\\n\" +\n                     \"•  تم فصل كافة الدوائر الكهربائية والأضواء.\";\n\n        emailSubject = \"🛑 إشعار إطفاء وتأمين سيارة Corolla\";\n        emailBody = \"تم إطفاء وتأمين السيارة بالكامل وفصل الدوائر.\\n\" +\n            \"• حالة المركبة: مطفأة بالكامل (VEHICLE_OFF)\\n\" +\n            \"• وقت الإطفاء: \" + new Date().toLocaleString('ar-YE');\n    } else if (cmd === 'R') {\n        st.red = !st.red;\n        notifyText = \"🔴 *[ وحدة الضوء الأحمر ]*\\n\\n\" +\n                     \"• 💡 *الحالة:* \" + (st.red ? \"`تم تشغيل الضوء الأحمر`\" : \"`تم إطفاء الضوء الأحمر`\");\n    } else if (cmd === 'B') {\n        st.blue = !st.blue;\n        notifyText = \"🔵 *[ وحدة الضوء الأزرق ]*\\n\\n\" +\n                     \"• 💡 *الحالة:* \" + (st.blue ? \"`تم تشغيل الضوء الأزرق`\" : \"`تم إطفاء الضوء الأزرق`\");\n    } else if (cmd === 'H') {\n        st.highBeam = !st.highBeam;\n        notifyText = \"🔦 *[ الضوء العالي ]*\\n\\n\" +\n                     \"•  *الحالة:* \" + (st.highBeam ? \"`تم تشغيل الضوء العالي`\" : \"`تم إطفاء الضوء العالي`\");\n    } else if (cmd === 'L') {\n        st.headlights = !st.headlights;\n        notifyText = \"💡 *[ الأنوار والكشافات ]*\\n\\n\" +\n                     \"•  *الحالة:* \" + (st.headlights ? \"`تم تشغيل الكشافات الرئيسية`\" : \"`تم إطفاء الكشافات الرئيسية`\");\n    } else if (cmd === 'D') {\n        st.door1 = !st.door1;\n        notifyText = \"🔓 *[ نظام الأبواب ]*\\n\\n\" +\n                     \"• 🔒 *الحالة:* \" + (st.door1 ? \"`تم قفل الأبواب ومغلقة بأمان`\" : \"`تم فتح الأبواب بنجاح`\");\n    } else if (cmd === 'T') {\n        st.door2 = false;\n        notifyText = \"🔓 *[ صندوق السيارة ]*\\n\\n\" +\n                     \"•  *الشنطة:* `تم فتح الشنطة بنجاح`\";\n    } else if (cmd === 'STATUS') {\n        var stStatus = global.get('corolla_status') || {};\n        var stateStr = stStatus.state || \"متوقفة / VEHICLE_OFF\";\n        var starts = stStatus.starts || 0;\n        var temp = stStatus.temperature || 28;\n        var vibCount = stStatus.vibrationCount || 0;\n        var appStatText = stStatus.appEnabled ? \"🟢 مسموح ومفعل\" : \"🔴 موقوف ومحظور\";\n\n        notifyText = \"📊 *تقرير الحالة المباشر لسيارة Corolla:*\\n\\n\" +\n                     \"• 🚗 *حالة المنظومة:* `\" + stateStr + \"`\\n\" +\n                     \"• 📱 *صلاحية التطبيق:* `\" + appStatText + \"`\\n\" +\n                     \"• 🌡 *حرارة الكابينة:* `\" + temp + \" °C`\\n\" +\n                     \"• 🔄 *مرات التشغيل:* `\" + starts + \" مرات`\\n\" +\n                     \"• 🚨 *سجل الاهتزازات:* `\" + vibCount + \" إنذارات`\";\n    }\n}\n\nglobal.set('corolla_status', st);\n\nvar outUI = { payload: st };\nvar outCmd = (cmd !== null && st.appEnabled) ? { payload: String(cmd), topic: \"corolla/control/cmd\" } : null;\nvar outMqttStatus = null;\n\n// 1. رسالة التليجرام (تظهر مع الأزرار التفاعلية حصرياً لتليجرام)\nvar outTg = null;\nif (notifyText !== \"\") {\n    var tgChatId = msg.chatId || (msg.payload && msg.payload.chatId) || \"YOUR_TELEGRAM_CHAT_ID\";\n   \n    outTg = {\n        payload: {\n            chatId: tgChatId,\n            type: \"message\",\n            content: notifyText,\n            options: {\n                parse_mode: \"Markdown\",\n                reply_markup: {\n                    inline_keyboard: [\n                        [{ text: st.appEnabled ? \"🟢 التطبيق: (مفعل - اضغط للإيقاف)\" : \"🔴 التطبيق: (موقوف - اضغط للتفعيل)\", callback_data: \"cmd_toggle_app\" }],\n                        [{ text: \"🚗 تشغيل المحرك\", callback_data: \"cmd_i\" }, { text: \"⚡ سويتش الإشعال\", callback_data: \"cmd_s\" }],\n                        [{ text: \"🛑 إطفاء المحرك\", callback_data: \"cmd_o\" }, { text: \"📊 تقرير الحالة\", callback_data: \"cmd_status\" }],\n                        [{ text: \"💡 كشافات رئيسية\", callback_data: \"cmd_l\" }, { text: \"🔦 الضوء العالي\", callback_data: \"cmd_h\" }],\n                        [{ text: \"🔴 إضاءة حمراء\", callback_data: \"cmd_r\" }, { text: \"🔵 إضاءة زرقاء\", callback_data: \"cmd_b\" }],\n                        [{ text: \"🔓 قفل/فتح الأبواب\", callback_data: \"cmd_d\" }, { text: \"🔓 فتح الشنطة\", callback_data: \"cmd_t\" }]\n                    ]\n                }\n            }\n        }\n    };\n}\n\n// 2. رسالة الواتساب\nvar outWa = null;\nif (notifyText !== \"\" && !isMenuRequest) {\n    outWa = {\n        payload: {\n            wa_custom_text: notifyText,\n            message: notifyText,\n            text: notifyText\n        }\n    };\n}\n\nvar outMail = null;\nif (emailSubject !== \"\" && emailBody !== \"\") {\n    var formattedText = emailBody.replace(/\\n/g, \"<br>\");\n    var emailCardHtml = \"<div dir='rtl' style='background-color:#0b1120;padding:20px;border-radius:10px;color:#fff;border:2px solid \" + themeColor + \";'>\" +\n        \"<h3 style='color:\" + themeColor + \";'>\" + emailSubject + \"</h3>\" +\n        \"<div>\" + formattedText + \"</div></div>\";\n    outMail = {\n        topic: emailSubject,\n        payload: emailCardHtml\n    };\n}\n\nreturn [outUI, outCmd, outMqttStatus, outTg, outWa, outMail];",
+        "outputs": 6,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 3300,
+        "y": 1840,
+        "wires": [
+            [
+                "node_corolla_thingspeak_prep",
+                "15f5a61ffdbfc3cc"
+            ],
+            [
+                "node_corolla_mqtt_out_cmd"
+            ],
+            [
+                "node_corolla_mqtt_out_status"
+            ],
+            [
+                "52f6e3b86a8623ab"
+            ],
+            [
+                "node_corolla_whatsapp_prep"
+            ],
+            [
+                "11fae0622b12212c"
+            ]
+        ]
+    },
+    {
+        "id": "node_corolla_mqtt_in_status",
+        "type": "mqtt in",
+        "z": "tab_corolla_car_system",
+        "name": "ESP32 Status Receiver",
+        "topic": "corolla/status/json",
+        "qos": "0",
+        "datatype": "json",
+        "broker": "mqtt_broker_local_1883",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 2920,
+        "y": 1580,
+        "wires": [
+            [
+                "node_corolla_state_engine"
+            ]
+        ]
+    },
+    {
+        "id": "node_corolla_mqtt_in_cmd",
+        "type": "mqtt in",
+        "z": "tab_corolla_car_system",
+        "name": "ESP32 Command Inbound",
+        "topic": "corolla/app/cmd",
+        "qos": "0",
+        "datatype": "utf8",
+        "broker": "mqtt_broker_local_1883",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 2950,
+        "y": 560,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "node_corolla_mqtt_out_cmd",
+        "type": "mqtt out",
+        "z": "tab_corolla_car_system",
+        "name": "ESP32 Command Publisher",
+        "topic": "corolla/control/cmd",
+        "qos": "0",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "mqtt_broker_local_1883",
+        "x": 3660,
+        "y": 1700,
+        "wires": []
+    },
+    {
+        "id": "node_corolla_mqtt_out_status",
+        "type": "mqtt out",
+        "z": "tab_corolla_car_system",
+        "name": "Status Sync Publisher",
+        "topic": "corolla/status/json",
+        "qos": "0",
+        "retain": "true",
+        "broker": "mqtt_broker_local_1883",
+        "x": 3640,
+        "y": 1780,
+        "wires": []
+    },
+    {
+        "id": "node_api_cmd_in",
+        "type": "http in",
+        "z": "tab_corolla_car_system",
+        "name": "POST /api/vehicle/command",
+        "url": "/api/vehicle/command",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 2190,
+        "y": 1800,
+        "wires": [
+            [
+                "node_api_cmd_process"
+            ]
+        ]
+    },
+    {
+        "id": "node_api_cmd_get_in",
+        "type": "http in",
+        "z": "tab_corolla_car_system",
+        "name": "GET /api/vehicle/command",
+        "url": "/api/vehicle/command",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 2190,
+        "y": 1840,
+        "wires": [
+            [
+                "node_api_cmd_process"
+            ]
+        ]
+    },
+    {
+        "id": "node_api_cmd_process",
+        "type": "function",
+        "z": "tab_corolla_car_system",
+        "name": "Process API Cmd",
+        "func": "var body = msg.payload || {};\nvar query = msg.req ? (msg.req.query || {}) : {};\nvar rawCmd = body.cmd || body.command || query.cmd || query.command;\n\nif (rawCmd) {\n    var cmd = String(rawCmd).trim();\n\n    // إرسال الأمر للسيارة\n    var msgControl = { payload: cmd };\n\n    msg.statusCode = 200;\n    msg.payload = {\n        status: \"success\",\n        command_sent: cmd,\n        timestamp: new Date().toISOString()\n    };\n\n    return [msgControl, msg];\n} else {\n    msg.statusCode = 400;\n    msg.payload = {\n        status: \"error\",\n        message: \"Missing cmd parameter\"\n    };\n    return [null, msg];\n}",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2470,
+        "y": 1820,
+        "wires": [
+            [
+                "node_corolla_state_engine"
+            ],
+            [
+                "node_api_cmd_res"
+            ]
+        ]
+    },
+    {
+        "id": "node_api_cmd_res",
+        "type": "http response",
+        "z": "tab_corolla_car_system",
+        "name": "HTTP Response",
+        "statusCode": "200",
+        "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+        },
+        "x": 2720,
+        "y": 1860,
+        "wires": []
+    },
+    {
+        "id": "node_api_status_in",
+        "type": "http in",
+        "z": "tab_corolla_car_system",
+        "name": "GET /api/vehicle/status",
+        "url": "/api/vehicle/status",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 2560,
+        "y": 3600,
+        "wires": [
+            [
+                "node_api_status_get"
+            ]
+        ]
+    },
+    {
+        "id": "node_api_status_get",
+        "type": "function",
+        "z": "tab_corolla_car_system",
+        "name": "Get Stored Status",
+        "func": "\nvar status = global.get('corolla_status') || {state: \"VEHICLE_OFF\", connected: true};\nmsg.payload = {\n    status: \"online\",\n    system: \"Toyota Corolla Smart Control\",\n    vehicle_state: status,\n    timestamp: new Date().toISOString()\n};\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 2840,
+        "y": 3600,
+        "wires": [
+            [
+                "node_api_status_res"
+            ]
+        ]
+    },
+    {
+        "id": "node_api_status_res",
+        "type": "http response",
+        "z": "tab_corolla_car_system",
+        "name": "HTTP Response",
+        "statusCode": "200",
+        "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+        },
+        "x": 3080,
+        "y": 3600,
+        "wires": []
+    },
+    {
+        "id": "node_api_whatsapp_in",
+        "type": "http in",
+        "z": "tab_corolla_car_system",
+        "name": "POST /api/whatsapp/send",
+        "url": "/api/whatsapp/send",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 3790,
+        "y": 3560,
+        "wires": [
+            [
+                "node_api_whatsapp_process"
+            ]
+        ]
+    },
+    {
+        "id": "node_api_whatsapp_get_in",
+        "type": "http in",
+        "z": "tab_corolla_car_system",
+        "name": "GET /api/whatsapp/send",
+        "url": "/api/whatsapp/send",
+        "method": "get",
+        "upload": false,
+        "skipBodyParsing": false,
+        "swaggerDoc": "",
+        "x": 3770,
+        "y": 3640,
+        "wires": [
+            [
+                "node_api_whatsapp_process"
+            ]
+        ]
+    },
+    {
+        "id": "node_api_whatsapp_process",
+        "type": "function",
+        "z": "tab_corolla_car_system",
+        "name": "Process WhatsApp API",
+        "func": "var body = msg.payload || {};\nvar query = msg.req ? (msg.req.query || {}) : {};\n\nvar text = body.wa_custom_text || body.message || body.text || query.message || query.text || \"🚗 تنبيه من تطبيق التحكم الذكي بسيارة Corolla!\";\nvar phone = body.phone || body.to || query.phone || query.to || flow.get('wa_phone') || \"YOUR_WHATSAPP_PHONE_NUMBER\";\nvar token = body.token || query.token || flow.get('wa_token') || \"YOUR_WASENDER_BEARER_TOKEN\";\n\nphone = String(phone).replace('+', '').trim();\n\nflow.set('wa_phone', phone);\nflow.set('wa_token', token);\n\nmsg.phone = phone;\nmsg.token = token;\nmsg.payload = {\n    wa_custom_text: text,\n    phone: phone,\n    token: token\n};\n\nvar resPayload = {\n    status: \"success\",\n    delivered_to_gateway: true,\n    recipient: phone,\n    message: text,\n    timestamp: new Date().toISOString()\n};\n\nreturn [msg, { payload: resPayload }];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 4090,
+        "y": 3600,
+        "wires": [
+            [],
+            [
+                "node_api_whatsapp_res"
+            ]
+        ]
+    },
+    {
+        "id": "node_api_whatsapp_res",
+        "type": "http response",
+        "z": "tab_corolla_car_system",
+        "name": "WhatsApp HTTP Res",
+        "statusCode": "200",
+        "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+        },
+        "x": 4400,
+        "y": 3620,
+        "wires": []
+    },
+    {
+        "id": "node_ui_btn_start",
+        "type": "ui-button",
+        "z": "tab_corolla_car_system",
+        "group": "ui_group_corolla_keyfob",
+        "name": "START ENGINE",
+        "label": "START ENGINE",
+        "order": 1,
+        "width": "4",
+        "height": "1",
+        "emulateClick": false,
+        "tooltip": "Start Corolla Engine Immediately",
+        "className": "",
+        "icon": "power_settings_new",
+        "iconPosition": "left",
+        "payload": "I",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "#ff1744",
+        "textColor": "#ffffff",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 2920,
+        "y": 1640,
+        "wires": [
+            [
+                "node_corolla_state_engine"
+            ]
+        ]
+    },
+    {
+        "id": "node_ui_btn_stop",
+        "type": "ui-button",
+        "z": "tab_corolla_car_system",
+        "group": "ui_group_corolla_keyfob",
+        "name": "SHUTDOWN",
+        "label": "OFF CAR FULLY",
+        "order": 2,
+        "width": "4",
+        "height": "1",
+        "emulateClick": false,
+        "tooltip": "Full Engine & Power Shutdown",
+        "className": "",
+        "icon": "power_off",
+        "iconPosition": "left",
+        "payload": "O",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "#1e293b",
+        "textColor": "#ff2a55",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 2910,
+        "y": 1760,
+        "wires": [
+            [
+                "node_corolla_state_engine"
+            ]
+        ]
+    },
+    {
+        "id": "node_ui_btn_ignition",
+        "type": "ui-button",
+        "z": "tab_corolla_car_system",
+        "group": "ui_group_corolla_keyfob",
+        "name": "IGNITION SWITCH",
+        "label": "IGNITION SWITCH",
+        "order": 3,
+        "width": "4",
+        "height": "1",
+        "emulateClick": false,
+        "tooltip": "Toggle Ignition Circuit",
+        "className": "",
+        "icon": "vpn_key",
+        "iconPosition": "left",
+        "payload": "S",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "#ff9100",
+        "textColor": "#ffffff",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 2930,
+        "y": 1700,
+        "wires": [
+            [
+                "node_corolla_state_engine"
+            ]
+        ]
+    },
+    {
+        "id": "node_ui_btn_door",
+        "type": "ui-button",
+        "z": "tab_corolla_car_system",
+        "group": "ui_group_corolla_lights",
+        "name": "DOOR LOCK",
+        "label": "DOOR LOCK",
+        "order": 6,
+        "width": 3,
+        "height": 2,
+        "emulateClick": false,
+        "tooltip": "Toggle Vehicle Door Locks",
+        "className": "",
+        "icon": "<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=car_lock\" />",
+        "iconPosition": "left",
+        "payload": "D",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "#3d5aff",
+        "textColor": "#ffffff",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 2920,
+        "y": 1900,
+        "wires": [
+            [
+                "node_corolla_state_engine"
+            ]
+        ]
+    },
+    {
+        "id": "node_ui_btn_trunk",
+        "type": "ui-button",
+        "z": "tab_corolla_car_system",
+        "group": "ui_group_corolla_lights",
+        "name": "TRUNK DOOR",
+        "label": "TRUNK DOOR",
+        "order": 5,
+        "width": 3,
+        "height": 2,
+        "emulateClick": false,
+        "tooltip": "Toggle Trunk Release Relay",
+        "className": "",
+        "icon": "lock car",
+        "iconPosition": "left",
+        "payload": "T",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "#651fff",
+        "textColor": "#ffffff",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 2920,
+        "y": 1960,
+        "wires": [
+            [
+                "node_corolla_state_engine"
+            ]
+        ]
+    },
+    {
+        "id": "node_ui_btn_red_light",
+        "type": "ui-button",
+        "z": "tab_corolla_car_system",
+        "group": "ui_group_corolla_lights",
+        "name": "RED LED",
+        "label": "RED LED",
+        "order": 1,
+        "width": 3,
+        "height": 2,
+        "emulateClick": false,
+        "tooltip": "Toggle Red LED Underglow",
+        "className": "",
+        "icon": "flare",
+        "iconPosition": "left",
+        "payload": "R",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "#d50000",
+        "textColor": "#ffffff",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 2900,
+        "y": 2020,
+        "wires": [
+            [
+                "node_corolla_state_engine"
+            ]
+        ]
+    },
+    {
+        "id": "node_ui_btn_blue_light",
+        "type": "ui-button",
+        "z": "tab_corolla_car_system",
+        "group": "ui_group_corolla_lights",
+        "name": "BLUE LED",
+        "label": "lightbulb",
+        "order": 2,
+        "width": 3,
+        "height": 2,
+        "emulateClick": false,
+        "tooltip": "Toggle Blue LED Underglow",
+        "className": "",
+        "icon": "flare",
+        "iconPosition": "left",
+        "payload": "B",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "#00b0ff",
+        "textColor": "#ffffff",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 2910,
+        "y": 2080,
+        "wires": [
+            [
+                "node_corolla_state_engine"
+            ]
+        ]
+    },
+    {
+        "id": "node_ui_btn_high_beam",
+        "type": "ui-button",
+        "z": "tab_corolla_car_system",
+        "group": "ui_group_corolla_lights",
+        "name": "HIGH BEAM",
+        "label": "HIGH BEAM",
+        "order": 4,
+        "width": 3,
+        "height": 2,
+        "emulateClick": false,
+        "tooltip": "Toggle High Beam Lights",
+        "className": "",
+        "icon": "lightbulb",
+        "iconPosition": "left",
+        "payload": "H",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "#00e5ff",
+        "textColor": "#ffffff",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 2910,
+        "y": 2140,
+        "wires": [
+            [
+                "node_corolla_state_engine"
+            ]
+        ]
+    },
+    {
+        "id": "node_ui_btn_headlights",
+        "type": "ui-button",
+        "z": "tab_corolla_car_system",
+        "group": "ui_group_corolla_lights",
+        "name": "HEADLIGHTS",
+        "label": "HEADLIGHTS",
+        "order": 3,
+        "width": 3,
+        "height": 2,
+        "emulateClick": false,
+        "tooltip": "Toggle Main Headlights",
+        "className": "",
+        "icon": "lightbulb",
+        "iconPosition": "left",
+        "payload": "L",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "#ffea00",
+        "textColor": "#ffffff",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 2920,
+        "y": 2200,
+        "wires": [
+            [
+                "node_corolla_state_engine"
+            ]
+        ]
+    },
+    {
+        "id": "node_corolla_whatsapp_prep",
+        "type": "function",
+        "z": "tab_corolla_car_system",
+        "name": "Prepare WasenderAPI Alert",
+        "func": "var phone = msg.phone || flow.get('wa_phone') || \"YOUR_WHATSAPP_PHONE_NUMBER\";\nphone = String(phone).replace('+', '').trim();\n\nvar bearerToken = msg.token || flow.get('wa_token') || \"YOUR_WASENDER_BEARER_TOKEN\";\n\nvar text = \"\";\nif (msg.payload && msg.payload.wa_custom_text) {\n    text = msg.payload.wa_custom_text;\n} else if (msg.payload && msg.payload.message) {\n    text = msg.payload.message;\n} else if (typeof msg.payload === 'string') {\n    text = msg.payload;\n}\n\nif (!text) return null;\n\nmsg.url = \"https://wasenderapi.com/api/send-message\";\nmsg.method = \"POST\";\nmsg.headers = {\n    \"Content-Type\": \"application/json\",\n    \"Authorization\": \"Bearer \" + bearerToken\n};\nmsg.payload = {\n    \"to\": phone,\n    \"phone\": phone,\n    \"message\": text,\n    \"text\": text\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 4140,
+        "y": 1880,
+        "wires": [
+            [
+                "node_corolla_whatsapp_request"
+            ]
+        ]
+    },
+    {
+        "id": "node_corolla_whatsapp_request",
+        "type": "http request",
+        "z": "tab_corolla_car_system",
+        "name": "WasenderAPI HTTP Out",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "https://wasenderapi.com/api/send-message",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": true,
+        "headers": [],
+        "x": 4330,
+        "y": 1980,
+        "wires": [
+            [
+                "node_debug_alert_log"
+            ]
+        ]
+    },
+    {
+        "id": "node_corolla_thingspeak_prep",
+        "type": "function",
+        "z": "tab_corolla_car_system",
+        "name": "ThingSpeak Telemetry Formatter",
+        "func": "var st = global.get('corolla_status') || {};\nvar apiKey = \"YOUR_THINGSPEAK_WRITE_API_KEY\";\n\nvar f1 = st.engine ? 1 : 0;\nvar f2 = st.vibrationCount || 0;\nvar f3 = st.starts || 0;\nvar f4 = st.door1 ? 1 : 0;\nvar f5 = st.headlights ? 1 : 0;\nvar f6 = st.highBeam ? 1 : 0;\nvar f7 = st.vibrationCount || 0;\nvar f8 = (st.engine || st.ignition) ? 1 : 0;\n\n// إرسال القيم كـ Object لتقوم عقدة HTTP بترجمتها تلقائياً\nmsg.payload = {\n    api_key: apiKey,\n    field1: f1,\n    field2: f2,\n    field3: f3,\n    field4: f4,\n    field5: f5,\n    field6: f6,\n    field7: f7,\n    field8: f8\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 4120,
+        "y": 1420,
+        "wires": [
+            [
+                "node_corolla_thingspeak_http"
+            ]
+        ]
+    },
+    {
+        "id": "node_corolla_thingspeak_http",
+        "type": "http request",
+        "z": "tab_corolla_car_system",
+        "name": "ThingSpeak Update HTTP",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": "query",
+        "url": "https://api.thingspeak.com/update",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": true,
+        "headers": [],
+        "x": 4440,
+        "y": 1420,
+        "wires": [
+            [
+                "node_debug_alert_log"
+            ]
+        ]
+    },
+    {
+        "id": "node_error_catch",
+        "type": "catch",
+        "z": "tab_corolla_car_system",
+        "name": "Global Error Catch",
+        "scope": null,
+        "uncaught": false,
+        "x": 4170,
+        "y": 2220,
+        "wires": [
+            [
+                "node_debug_alert_log"
+            ]
+        ]
+    },
+    {
+        "id": "68102e13f384f542",
+        "type": "mqtt in",
+        "z": "tab_corolla_car_system",
+        "name": "corolla/server/state",
+        "topic": "corolla/server/state",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "mqtt_broker_local_1883",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 3870,
+        "y": 1780,
+        "wires": [
+            [
+                "dadedd27de98b20c"
+            ]
+        ]
+    },
+    {
+        "id": "dadedd27de98b20c",
+        "type": "function",
+        "z": "tab_corolla_car_system",
+        "name": "function 5",
+        "func": "// msg.payload عبارة عن JSON القادم من ESP32\nvar state = msg.payload.state;\n\n// إذا كان المحرك شغال أو السويتش شغال، تعتبر الحالة ON (true)\nif (state === \"ENGINE_RUNNING\" || state === \"COILS_ON\" || state === \"IGNITION_ON\") {\n    msg.payload = true;\n} else {\n    msg.payload = false;\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 3980,
+        "y": 1620,
+        "wires": [
+            [
+                "15f5a61ffdbfc3cc",
+                "node_corolla_whatsapp_prep"
+            ]
+        ]
+    },
+    {
+        "id": "15f5a61ffdbfc3cc",
+        "type": "ui-template",
+        "z": "tab_corolla_car_system",
+        "group": "ui_group_corolla_status",
+        "page": "",
+        "ui": "",
+        "name": "Vehicle Telemetry Display",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "head": "",
+        "format": "<template>\n  <div class=\"mobile-status-bar\">\n    <div class=\"status-capsule\" :class=\"{\n      'state-running': msg.payload?.state === 'ENGINE_RUNNING',\n      'state-ign': msg.payload?.state === 'IGNITION_ON',\n      'state-off': !msg.payload?.state || msg.payload?.state === 'VEHICLE_OFF'\n    }\">\n      <span class=\"engine-icon\">⚡</span>\n      <span class=\"state-txt\">{{ msg.payload?.state || 'VEHICLE_OFF' }}</span>\n    </div>\n\n    <div class=\"status-group indicators-bar\">\n      <div class=\"mini-chip\" title=\"عدد مرات التشغيل\">\n        <span class=\"icon\">🔄</span>\n        <span class=\"val\">{{ msg.payload?.starts || 0 }}</span>\n      </div>\n\n      <div class=\"mini-chip\" :class=\"{'alert-on': (msg.payload?.vibrationCount || 0) > 0}\" title=\"سجل الاهتزاز\">\n        <span class=\"icon\">📳</span>\n        <span class=\"val\">{{ msg.payload?.vibrationCount || 0 }}</span>\n      </div>\n\n      <div class=\"mini-chip\" :class=\"{'blocked': msg.payload?.starterBlocked}\" title=\"نظام البادئ\">\n        <span class=\"icon\">{{ msg.payload?.starterBlocked ? '🛡️' : '🔑' }}</span>\n        <span class=\"val\">{{ msg.payload?.starterBlocked ? 'LOCKED' : 'READY' }}</span>\n      </div>\n\n      <div class=\"mini-chip\" title=\"درجة الحرارة\">\n        <span class=\"icon\">🌡️</span>\n        <span class=\"val\">{{ msg.payload?.temperature || 28 }}°</span>\n      </div>\n\n      <div class=\"mini-chip online-chip\" title=\"حالة الاتصال\">\n        <span class=\"pulse-dot\"></span>\n        <span class=\"val\">LIVE</span>\n      </div>\n    </div>\n  </div>\n</template>\n\n<style scoped>\n.mobile-status-bar {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  background: rgba(15, 23, 42, 0.75);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  border-radius: 50px;\n  padding: 6px 16px;\n  backdrop-filter: blur(16px);\n  -webkit-backdrop-filter: blur(16px);\n  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);\n  font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif;\n  color: #fff;\n  width: 100%;\n}\n\n.status-group {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n}\n\n.status-capsule {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  padding: 4px 14px;\n  border-radius: 30px;\n  font-size: 11px;\n  font-weight: 800;\n  letter-spacing: 1px;\n  text-transform: uppercase;\n  transition: all 0.3s ease;\n}\n\n.engine-icon {\n  font-size: 12px;\n}\n\n.state-off {\n  background: rgba(239, 68, 68, 0.12);\n  border: 1px solid rgba(239, 68, 68, 0.4);\n  color: #f87171;\n  box-shadow: 0 0 10px rgba(239, 68, 68, 0.25);\n}\n\n.state-ign {\n  background: rgba(245, 158, 11, 0.15);\n  border: 1px solid rgba(245, 158, 11, 0.5);\n  color: #fbbf24;\n  box-shadow: 0 0 12px rgba(245, 158, 11, 0.35);\n}\n\n.state-running {\n  background: rgba(34, 197, 94, 0.15);\n  border: 1px solid rgba(34, 197, 94, 0.6);\n  color: #4ade80;\n  box-shadow: 0 0 16px rgba(34, 197, 94, 0.45);\n}\n\n.indicators-bar {\n  gap: 6px;\n}\n\n.mini-chip {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  background: rgba(255, 255, 255, 0.05);\n  border: 1px solid rgba(255, 255, 255, 0.08);\n  border-radius: 20px;\n  padding: 3px 8px;\n  font-size: 11px;\n  font-weight: 700;\n  color: #cbd5e1;\n}\n\n.mini-chip .icon {\n  font-size: 11px;\n}\n\n.mini-chip .val {\n  font-size: 10px;\n}\n\n.mini-chip.alert-on {\n  border-color: rgba(245, 158, 11, 0.6);\n  color: #fbbf24;\n}\n\n.mini-chip.blocked {\n  border-color: rgba(239, 68, 68, 0.6);\n  color: #f87171;\n}\n\n.online-chip {\n  background: rgba(34, 197, 94, 0.1);\n  border-color: rgba(34, 197, 94, 0.3);\n  color: #4ade80;\n}\n\n.pulse-dot {\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background-color: #22c55e;\n  box-shadow: 0 0 6px #22c55e;\n}\n\n.nrdb-ui-group:has(.mobile-status-bar),\n.v-card:has(.mobile-status-bar) {\n  background: transparent !important;\n  border: none !important;\n  box-shadow: none !important;\n  backdrop-filter: none !important;\n  -webkit-backdrop-filter: none !important;\n  padding: 0 !important;\n  margin-bottom: 8px !important;\n}\n\n.nrdb-ui-group:has(.mobile-status-bar) .v-card-title,\n.nrdb-ui-group:has(.mobile-status-bar) .nrdb-group-title {\n  display: none !important;\n}\n</style>",
+        "storeOutMessages": true,
+        "passthru": true,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 3650,
+        "y": 1460,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "fec8f487ac98118c",
+        "type": "ui-template",
+        "z": "tab_corolla_car_system",
+        "group": "",
+        "page": "",
+        "ui": "7e936845776db96a",
+        "name": "Custom CSS injector",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "head": "",
+        "format": "body, .nrdb-layout {\n  background: radial-gradient(circle at 50% 10%, #080d18 0%, #020408 100%) !important;\n  font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif !important;\n}\n\n.nrdb-ui-group, .v-card {\n  background: rgba(10, 16, 30, 0.82) !important;\n  backdrop-filter: blur(20px) !important;\n  -webkit-backdrop-filter: blur(20px) !important;\n  border: 1px solid rgba(255, 255, 255, 0.08) !important;\n  border-radius: 18px !important;\n  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7) !important;\n  padding: 16px !important;\n}\n\n.v-card-title, .nrdb-group-title {\n  color: #94a3b8 !important;\n  font-size: 11px !important;\n  font-weight: 800 !important;\n  letter-spacing: 1.5px !important;\n  text-transform: uppercase !important;\n}\n\n.v-btn__overlay,\n.v-btn__underlay {\n  display: none !important;\n  background: transparent !important;\n}\n\n.nrdb-ui-button button, .v-btn {\n  background: linear-gradient(180deg, #182235 0%, #0d1524 100%) !important;\n  border: 1.5px solid rgba(255, 255, 255, 0.16) !important;\n  border-radius: 18px !important;\n  min-height: 58px !important;\n  height: 58px !important;\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;\n  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;\n}\n\n.nrdb-ui-button button .v-btn__content,\n.v-btn .v-btn__content {\n  display: flex !important;\n  flex-direction: column !important;\n  align-items: center !important;\n  justify-content: center !important;\n  gap: 4px !important;\n  padding: 4px 0 !important;\n}\n\n.nrdb-ui-button button i,\n.v-btn .v-icon,\n.nrdb-ui-button button svg {\n  font-size: 22px !important;\n  color: #ffffff !important;\n  fill: #ffffff !important;\n  margin: 0 !important;\n  line-height: 1 !important;\n}\n\n.v-btn__content span,\n.v-btn__content div,\n.nrdb-ui-button button span {\n  color: #ffffff !important;\n  opacity: 1 !important;\n  font-weight: 800 !important;\n  font-size: 11px !important;\n  letter-spacing: 0.6px !important;\n  text-transform: uppercase !important;\n  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important;\n}\n\n.nrdb-ui-button button:hover, .v-btn:hover {\n  border-color: #00e5ff !important;\n  background: linear-gradient(180deg, rgba(0, 229, 255, 0.22) 0%, rgba(13, 21, 36, 0.95) 100%) !important;\n  box-shadow: 0 0 18px rgba(0, 229, 255, 0.55), inset 0 0 8px rgba(0, 229, 255, 0.2) !important;\n  transform: translateY(-2px) scale(1.01) !important;\n  cursor: pointer !important;\n}\n\n.nrdb-ui-button button:hover .v-btn__content *,\n.v-btn:hover .v-btn__content * {\n  text-shadow: 0 0 10px rgba(0, 229, 255, 0.8) !important;\n}\n\n.nrdb-ui-button button:active, .v-btn:active {\n  transform: translateY(1px) scale(0.98) !important;\n}\n\n.nrdb-ui-button:has([class*=\"START\"], [title*=\"START\"], [aria-label*=\"START\"]) button {\n  background: linear-gradient(180deg, rgba(225, 29, 72, 0.28) 0%, rgba(13, 21, 36, 0.95) 100%) !important;\n  border-color: #ff2a55 !important;\n  box-shadow: 0 0 14px rgba(255, 42, 85, 0.45) !important;\n}\n.nrdb-ui-button:has([class*=\"START\"], [title*=\"START\"], [aria-label*=\"START\"]) button:hover {\n  background: linear-gradient(180deg, rgba(225, 29, 72, 0.45) 0%, rgba(13, 21, 36, 0.95) 100%) !important;\n  box-shadow: 0 0 25px rgba(255, 42, 85, 0.85) !important;\n  border-color: #ff2a55 !important;\n}\n\n.nrdb-ui-button:has([class*=\"OFF\"], [title*=\"OFF\"], [aria-label*=\"OFF\"]) button {\n  background: linear-gradient(180deg, #243044 0%, #0d1524 100%) !important;\n  border-color: rgba(148, 163, 184, 0.35) !important;\n  box-shadow: 0 0 10px rgba(0, 0, 0, 0.4) !important;\n}\n.nrdb-ui-button:has([class*=\"OFF\"], [title*=\"OFF\"], [aria-label*=\"OFF\"]) button:hover {\n  border-color: #cbd5e1 !important;\n  box-shadow: 0 0 16px rgba(255, 255, 255, 0.3) !important;\n}\n\n.nrdb-ui-button:has([class*=\"IGNITION\"], [title*=\"IGNITION\"], [aria-label*=\"IGNITION\"]) button {\n  background: linear-gradient(180deg, rgba(245, 158, 11, 0.28) 0%, rgba(13, 21, 36, 0.95) 100%) !important;\n  border-color: #ff9100 !important;\n  box-shadow: 0 0 14px rgba(255, 145, 0, 0.45) !important;\n}\n.nrdb-ui-button:has([class*=\"IGNITION\"], [title*=\"IGNITION\"], [aria-label*=\"IGNITION\"]) button:hover {\n  background: linear-gradient(180deg, rgba(245, 158, 11, 0.45) 0%, rgba(13, 21, 36, 0.95) 100%) !important;\n  box-shadow: 0 0 25px rgba(255, 145, 0, 0.85) !important;\n  border-color: #ff9100 !important;\n}\n\n.nrdb-ui-group:has(.mobile-status-bar),\n.v-card:has(.mobile-status-bar) {\n  background: transparent !important;\n  border: none !important;\n  box-shadow: none !important;\n  backdrop-filter: none !important;\n  -webkit-backdrop-filter: none !important;\n  padding: 0 !important;\n  margin-bottom: 8px !important;\n}\n\n.nrdb-ui-group:has(.mobile-status-bar) .v-card-title,\n.nrdb-ui-group:has(.mobile-status-bar) .nrdb-group-title {\n  display: none !important;\n}\n\n.v-navigation-drawer {\n  background: rgba(11, 18, 32, 0.95) !important;\n  backdrop-filter: blur(20px) !important;\n  border-right: 1px solid rgba(255, 255, 255, 0.1) !important;\n}\n\n.v-navigation-drawer .v-list-item {\n  border-radius: 10px !important;\n  margin: 6px 10px !important;\n  border: 1px solid rgba(255, 255, 255, 0.08) !important;\n}\n\n.v-navigation-drawer .v-list-item--active {\n  background: linear-gradient(90deg, rgba(0, 229, 255, 0.2) 0%, transparent 100%) !important;\n  border-color: #00e5ff !important;\n}",
+        "storeOutMessages": true,
+        "passthru": true,
+        "resendOnRefresh": true,
+        "templateScope": "site:style",
+        "className": "",
+        "x": 3620,
+        "y": 1060,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "node_debug_alert_log",
+        "type": "debug",
+        "z": "tab_corolla_car_system",
+        "name": "Log Debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 4630,
+        "y": 2080,
+        "wires": []
+    },
+    {
+        "id": "11fae0622b12212c",
+        "type": "e-mail",
+        "z": "tab_corolla_car_system",
+        "server": "smtp.gmail.com",
+        "port": "465",
+        "authtype": "BASIC",
+        "saslformat": true,
+        "token": "oauth2Response.access_token",
+        "secure": true,
+        "tls": true,
+        "name": "your_email@example.com",
+        "dname": "",
+        "x": 3840,
+        "y": 2000,
+        "wires": []
+    },
+    {
+        "id": "0f0471adf7f1813f",
+        "type": "telegram receiver",
+        "z": "tab_corolla_car_system",
+        "name": "",
+        "bot": "a519f44581d00612",
+        "saveDataDir": "",
+        "filterCommands": true,
+        "hasinput": true,
+        "inputs": 1,
+        "handleallupdates": true,
+        "handleprocessupdates": true,
+        "x": 2170,
+        "y": 1740,
+        "wires": [
+            [
+                "c6f2ec294689b824"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "52f6e3b86a8623ab",
+        "type": "telegram sender",
+        "z": "tab_corolla_car_system",
+        "name": "Telegram Sender",
+        "bot": "a519f44581d00612",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 4290,
+        "y": 1800,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "c6f2ec294689b824",
+        "type": "function",
+        "z": "tab_corolla_car_system",
+        "name": "function 6",
+        "func": "var commandText = \"\";\nvar chatId = \"YOUR_TELEGRAM_CHAT_ID\";\n\nif (msg.payload && msg.payload.chatId) {\n    chatId = String(msg.payload.chatId);\n} else if (msg.chatId) {\n    chatId = String(msg.chatId);\n} else if (msg.payload && msg.payload.callback_query && msg.payload.callback_query.message && msg.payload.callback_query.message.chat) {\n    chatId = String(msg.payload.callback_query.message.chat.id);\n} else if (msg.payload && msg.payload.chat && msg.payload.chat.id) {\n    chatId = String(msg.payload.chat.id);\n} else if (msg.originalMessage && msg.originalMessage.chat && msg.originalMessage.chat.id) {\n    chatId = String(msg.originalMessage.chat.id);\n} else if (msg.originalMessage && msg.originalMessage.from && msg.originalMessage.from.id) {\n    chatId = String(msg.originalMessage.from.id);\n}\n\nif (msg.payload) {\n    if (msg.payload.callback_query && msg.payload.callback_query.data) {\n        commandText = msg.payload.callback_query.data;\n    } else if (typeof msg.payload === 'string') {\n        commandText = msg.payload;\n    } else if (msg.payload.content) {\n        commandText = msg.payload.content;\n    } else if (msg.payload.text) {\n        commandText = msg.payload.text;\n    } else if (msg.payload.message && msg.payload.message.text) {\n        commandText = msg.payload.message.text;\n    }\n}\n\nif (!commandText && msg.originalMessage && msg.originalMessage.text) {\n    commandText = msg.originalMessage.text;\n}\n\nif (!commandText || typeof commandText !== 'string' || commandText.trim() === \"\") {\n    return null;\n}\n\nmsg.payload = commandText.trim();\nmsg.chatId = chatId;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2440,
+        "y": 1740,
+        "wires": [
+            [
+                "node_corolla_state_engine"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_broker_local_1883",
+        "type": "mqtt-broker",
+        "name": "Local Mosquitto Broker",
+        "broker": "192.168.1.100",
+        "port": 1883,
+        "clientid": "nodered_corolla_client",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "ui_group_corolla_keyfob",
+        "type": "ui-group",
+        "name": "Engine & Ignition Control Center",
+        "page": "ui_page_corolla_dashboard",
+        "width": "12",
+        "height": "1",
+        "order": 2,
+        "showTitle": true,
+        "className": "neon-group-red",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "ui_group_corolla_lights",
+        "type": "ui-group",
+        "name": "Lighting, Relays & Doors Grid",
+        "page": "ui_page_corolla_dashboard",
+        "width": "6",
+        "height": "1",
+        "order": 3,
+        "showTitle": true,
+        "className": "neon-group-cyan",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "ui_group_corolla_status",
+        "type": "ui-group",
+        "name": "Live Diagnostics & System Status",
+        "page": "ui_page_corolla_dashboard",
+        "width": "6",
+        "height": "1",
+        "order": 1,
+        "showTitle": true,
+        "className": "neon-group-amber",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "7e936845776db96a",
+        "type": "ui-base",
+        "name": "Corolla Car",
+        "path": "/dashboard",
+        "appIcon": "",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-notification",
+            "ui-control"
+        ],
+        "showPathInSidebar": false,
+        "headerContent": "page",
+        "navigationStyle": "icon",
+        "titleBarStyle": "default",
+        "showReconnectNotification": true,
+        "notificationDisplayTime": 1,
+        "showDisconnectNotification": true,
+        "allowInstall": true
+    },
+    {
+        "id": "a519f44581d00612",
+        "type": "telegram bot",
+        "botname": "your_bot_name",
+        "usernames": "",
+        "chatids": "YOUR_TELEGRAM_CHAT_ID",
+        "baseapiurl": "",
+        "testenvironment": false,
+        "updatemode": "polling",
+        "pollinterval": 300,
+        "usesocks": false,
+        "sockshost": "",
+        "socksprotocol": "socks5",
+        "socksport": 6667,
+        "socksusername": "anonymous",
+        "sockspassword": "",
+        "bothost": "",
+        "botpath": "",
+        "localbothost": "0.0.0.0",
+        "localbotport": 8443,
+        "publicbotport": 8443,
+        "privatekey": "",
+        "certificate": "",
+        "useselfsignedcertificate": false,
+        "sslterminated": false,
+        "verboselogging": false
+    },
+    {
+        "id": "ui_page_corolla_dashboard",
+        "type": "ui-page",
+        "name": "Corolla Smart Cockpit",
+        "ui": "7e936845776db96a",
+        "path": "/corolla",
+        "icon": "car-sports",
+        "layout": "notebook",
+        "theme": "7b85b30f3d41b55a",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 1,
+        "className": "",
+        "visible": true,
+        "disabled": false
+    },
+    {
+        "id": "7b85b30f3d41b55a",
+        "type": "ui-theme",
+        "name": "Default Theme",
+        "colors": {
+            "surface": "#111726",
+            "primary": "#ff2a55",
+            "bgPage": "#06090e",
+            "groupBg": "#0d1322",
+            "groupOutline": "#ff2a5530"
+        },
+        "sizes": {
+            "density": "compact",
+            "pagePadding": "12px",
+            "groupGap": "12px",
+            "groupBorderRadius": "4px",
+            "widgetGap": "12px"
+        }
+    },
+    {
+        "id": "ad19e624ec1cf009",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "@flowfuse/node-red-dashboard": "1.31.0",
+            "node-red-node-email": "5.2.5",
+            "node-red-contrib-telegrambot": "19.0.2"
+        }
+    }
+]
