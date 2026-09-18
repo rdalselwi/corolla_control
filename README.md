@@ -13,9 +13,13 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter">
   <img src="https://img.shields.io/badge/ESP32-Microcontroller-E7352C?style=for-the-badge&logo=espressif&logoColor=white" alt="ESP32">
-  <img src="https://img.shields.io/badge/Node--RED-IoT-8F0000?style=for-the-badge&logo=node-red&logoColor=white" alt="Node-RED">
+  <a href="https://github.com/rdalselwi/corolla_control/blob/main/nodered/flows.json" target="_blank">
+    <img src="https://img.shields.io/badge/Node--RED-Flows-8F0000?style=for-the-badge&logo=node-red&logoColor=white" alt="Node-RED">
+  </a>
   <img src="https://img.shields.io/badge/MQTT-Mosquitto-37474F?style=for-the-badge&logo=eclipse-mosquitto&logoColor=white" alt="Mosquitto">
-  <img src="https://img.shields.io/badge/ThingSpeak-Cloud-0072C6?style=for-the-badge" alt="ThingSpeak">
+  <a href="https://thingspeak.mathworks.com/channels/YOUR_CHANNEL_ID" target="_blank">
+    <img src="https://img.shields.io/badge/ThingSpeak-Live_Channel-0072C6?style=for-the-badge&logo=thingspeak&logoColor=white" alt="ThingSpeak">
+  </a>
   <img src="https://img.shields.io/badge/Postman-API_Testing-FF6C37?style=for-the-badge&logo=postman&logoColor=white" alt="Postman">
   <img src="https://img.shields.io/badge/Telegram-Bot-229ED9?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram">
   <img src="https://img.shields.io/badge/WhatsApp-Integration-25D366?style=for-the-badge&logo=whatsapp&logoColor=white" alt="WhatsApp">
@@ -57,6 +61,8 @@
   <img src="THINK.jpg" alt="ThingSpeak Analytics" width="48%" height="400">
   &nbsp;&nbsp;
   <img src="NODE.jpg" alt="Node-RED Flows" width="48%" height="400">
+  &nbsp;&nbsp;
+  <img src="dashboard.jpg" alt="Node-RED Flows" width="48%" height="400">
 </p>
 
 ---
@@ -83,9 +89,9 @@
 
 * **المتحكم الدقيق (Microcontroller):** ESP32 NodeMCU / ESP32-WROOM مع وحدة Wi-Fi مدمجة.
 * **بروتوكول ووسيط الاتصال:** بروتوكول MQTT عبر وسيط Mosquitto و HiveMQ، بالإضافة إلى WebSockets.
-* **المنصة السحابية (Cloud Analytics):** منصة ThingSpeak لتحليل وعرض قراءات التيليمتري بيانيًا.
+* **المنصة السحابية (Cloud Analytics):** منصة [ThingSpeak](https://thingspeak.mathworks.com/channels/YOUR_CHANNEL_ID) لتحليل وعرض قراءات التيليمتري بيانيًا ومراقبة المؤشرات الحية.
 * **بيئة فحص وتجربة الـ APIs:** برنامج Postman لاختبار نقاط الاتصال وتدفق البيانات.
-* **البرمجيات الوسيطة (Middleware):** Node-RED Dashboard 2.0 لإدارة التدفقات وقراءات المستشعرات.
+* **البرمجيات الوسيطة (Middleware):** Node-RED Dashboard 2.0 لإدارة التدفقات وقراءات المستشعرات ([عرض ملف flows.json](https://github.com/rdalselwi/corolla_control/blob/main/nodered/flows.json)).
 * **تطبيق الواجهة (UI/UX):** تطوير عبر Flutter بتصميم Dark Glassmorphism مستوحى من أحدث منصات السيارات.
 * **أنظمة التنبيه والمراسلة:** بوتات تفاعلية عبر Telegram و WhatsApp لإرسال التنبيهات المباشرة وحالة المحرك.
 
@@ -93,13 +99,14 @@
 
 ## 📂 هيكلية ملفات المشروع (Project Directory Structure)
 
-يحتوي المستودع على المجلدات والملفات الأساسية التالية الخاصة بمشروع Flutter والـ ESP32:
+يحتوي المستودع على المجلدات والملفات الأساسية التالية الخاصة بمشروع Flutter والـ ESP32 والـ Node-RED:
 
 * `lib/` : يحتوي على الشيفرات البرمجية لتطبيق الـ Flutter وتصاميم الواجهات.
 * `assets/` : الموارد والأصول المستخدمة في التطبيق.
 * `android/`, `ios/`, `windows/`, `linux/`, `macos/`, `web/` : مجلدات الدعم الخاصة بالمنصات المختلفة.
 * `pubspec.yaml` : ملف إعدادات الحزم والاعتماديات الخاصة بالمشروع.
 * `esp32/` : ملفات الأكواد والبرمجيات الخاصة بمتحكم ESP32 (.ino).
+* `nodered/` : يحتوي على ملف تدفقات Node-RED وإعدادات لوحة التحكم (`flows.json`).
 
 ---
 
@@ -107,10 +114,10 @@
 
 تم تطوير وتصميم هذه المنظومة بواسطة المهندس رعد فهد عبده قائد الصلوي (Raad Al-Selwi):
 
-* 🐙 GitHub: @rdalselwi
-* 💼 LinkedIn: Raad Al-Selwi
-* ✈️ Telegram: @r1h_x
-* 📧 Email: r.dalselwi@gmail.com
+* 🐙 GitHub: [@rdalselwi](https://github.com/rdalselwi)
+* 💼 LinkedIn: [Raad Al-Selwi](https://www.linkedin.com/in/raad-al-selwi-23202a421)
+* ✈️ Telegram: [@r1h_x](https://t.me/r1h_x)
+* 📧 Email: [r.dalselwi@gmail.com](mailto:r.dalselwi@gmail.com)
 
 ---
 
