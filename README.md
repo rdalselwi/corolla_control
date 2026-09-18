@@ -1,18 +1,121 @@
-<div align="center"> # 🚗 Ultimate Smart Car Telemetry & Control System # نظام التحكم الذكي للسيارات والقيادة المدمجة عن بعد <p align="center"> <b> A Professional IoT Mobile & Desktop Control System Built for ESP32, Node-RED & Flutter </b> <br> <b>نظام إنترنت أشياء متطور للتحكم والقياس عن بعد بالسيارة عبر ESP32، MQTT، والذكاء الاصطناعي</b> </p> <!-- Shields Badges --> <p align="center"> <img src="https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter"> <img src="https://img.shields.io/badge/ESP32-Microcontroller-E7352C?style=for-the-badge&logo=espressif&logoColor=white" alt="ESP32"> <img src="https://img.shields.io/badge/Node--RED-IoT-8F0000?style=for-the-badge&logo=node-red&logoColor=white" alt="Node-RED"> <img src="https://img.shields.io/badge/MQTT-Mosquitto-37474F?style=for-the-badge&logo=eclipse-mosquitto&logoColor=white" alt="Mosquitto"> <img src="https://img.shields.io/badge/ThingSpeak-Cloud-0072C6?style=for-the-badge" alt="ThingSpeak"> <img src="https://img.shields.io/badge/Postman-API_Testing-FF6C37?style=for-the-badge&logo=postman&logoColor=white" alt="Postman"> <img src="https://img.shields.io/badge/Telegram-Bot-229ED9?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram"> <img src="https://img.shields.io/badge/WhatsApp-Integration-25D366?style=for-the-badge&logo=whatsapp&logoColor=white" alt="WhatsApp"> <img src="https://img.shields.io/badge/License-MIT-F39C12?style=for-the-badge" alt="License"> </p> <p align="center"> <a href="https://github.com/rdalselwi"><img src="https://img.shields.io/badge/GitHub-rdalselwi-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"></a> <a href="https://www.linkedin.com/in/raad-al-selwi-23202a421"><img src="https://img.shields.io/badge/LinkedIn-Raad%20Al--Selwi-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn"></a> <a href="https://t.me/r1h_x"><img src="https://img.shields.io/badge/Telegram-@r1h__x-229ED9?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram"></a> <a href="mailto:r.dalselwi@gmail.com"><img src="https://img.shields.io/badge/Email-r.dalselwi@gmail.com-EA4335?style=for-the-badge&logo=gmail&logoColor=white" alt="Email"></a> </p> --- </div> ## 📱 واجهات النظام (System Dashboards & UI) <p align="center"> <img src="CAR.jpg" alt="Telemetry & Speedometer" width="30%" height="500"> &nbsp;&nbsp; <img src="CAR1.jpg" alt="Car Controls & Lights" width="30%" height="500"> &nbsp;&nbsp; <img src="CAR2.jpg" alt="AI Assistant Chatbot" width="30%" height="500"> </p> <p align="center"> <img src="CAR3.jpg" alt="System Settings & Options" width="30%" height="500"> &nbsp;&nbsp; <img src="CAR4.jpg" alt="Security Login & Gateway" width="30%" height="500"> </p> <p align="center"> <img src="POST1.jpg" alt="API Testing 1" width="48%" height="400"> &nbsp;&nbsp; <img src="POST.jpg" alt="API Testing 2" width="48%" height="400"> </p> <p align="center"> <img src="THINK.jpg" alt="ThingSpeak Cloud Analytics" width="48%" height="400"> &nbsp;&nbsp; <img src="NODE.jpg" alt="Node-RED Logic & Flow" width="48%" height="400"> </p> --- ## 📖 نبذة عن المشروع (About The Project) **Ultimate Smart Car Telemetry & Control System** منظومة إنترنت أشياء متكاملة للربط المباشر والتحكم الذكي بالمركبة (Toyota Corolla) عبر متحكم **ESP32**. يجمع النظام بين المراقبة اللحظية لبيانات التيليمتري (Real-time telemetry)، التحكم في المشغلات الميكانيكية والكهربائية، التحليل السحابي عبر **ThingSpeak**، والتكامل المزدوج مع منصات التواصل الفوري (**WhatsApp & Telegram**) لتنفيذ الأوامر واستقبال التنبيهات الحرجة. --- ## ✨ المميزات والخصائص الرئيسية (Key Features) * **بوابة الأمان والتحقق المتقدم:** حماية النظام عبر PIN Code أو المقاييس الحيوية مع واجهة دخول تفاعلية. * **لوحة العدادات الحية (Live Telemetry):** متابعة السرعة، معدل دوران المحرك (RPM)، درجة الحرارة، وحالة الوقود بتصميم Dark Glassmorphism. * **التحكم الشامل عن بعد:** تشغيل/إيقاف المحرك، التحكم بقفل الأبواب وصندوق الأمتعة، وإدارة الإضاءة الرئيسية والإضاءة المحيطية RGB. * **المساعد الذكي (AI Assistant):** تفاعل صوتي ونصوص حية لتشخيص الأعطال وتتبع حالة الأنظمة الداخلية. * **التحليل السحابي والبيانات التاريخية:** رفع وتسجيل قراءات التيليمتري مباشرة عبر منصة **ThingSpeak IoT Cloud** لإجراء التحليلات الزمنية. * **التحكم والإنذار عبر المراسلة الفورية:** ربط متزامن مع **WhatsApp Bot** و **Telegram Bot** لإرسال الأوامر النصية وتلقي تنبيهات الطوارئ والحماية فوراً. * **بيئة اختبار واجهات البرمجة:** توثيق واختبار كافة نقاط الاتصال والـ REST APIs عبر **Postman**. --- ## 🛠️ المكونات والتقنيات المستخدمة (Tech Stack & Architecture) * **المتحكم الدقيق (Microcontroller):** ESP32 NodeMCU / ESP32-WROOM مدمج باتصال Wi-Fi. * **بروتوكولات ووسطاء الرسائل (Messaging Brokers):** * **Eclipse Mosquitto:** خادم وسيط لإدارة وتوزيع رسائل MQTT المحلية والسحابية بأقل معدل تأخير (Ultra-low latency). * **HiveMQ / Cloud Broker:** لدعم الاتصال الاحتياطي ونقل الحزم اللحظية. * **المنصات السحابية والتحليلية:** **ThingSpeak IoT** لرسم وتخزين مؤشرات أداء المركبة وقراءات الحساسات. * **محرك المعالجة والمنطق (Middleware):** **Node-RED Dashboard 2.0** لبناء مسارات المعالجة، الربط بين البروتوكولات، وتوجيه الأحداث. * **واجهات الاختبار (API Testing):** استخدام **Postman** لتشخيص الـ HTTP Endpoints والتحقق من صحة حمولة الرسائل (Payloads). * **تطبيقات الواجهة والمستخدم:** * **Flutter Framework:** تطبيق متجاوب لكافة المنصات (Mobile & Desktop). * **Telegram & WhatsApp APIs:** واجهات تفاعلية للتحكم السريع وإرسال تقارير الأمان اللحظية. --- ## 📂 هيكلية ملفات المشروع (Project Directory Structure) ```text ├── android/ # إعدادات وبناء منصة Android ├── ios/ # إعدادات منصة iOS ├── web/ # ملفات دعم الويب ├── windows/ # ملفات بناء تطبيق سطح المكتب (Windows) ├── lib/ # الكود المصدري لتطبيق Flutter وتصاميم الشاشات ├── assets/ # الموارد والخطوط والصور المستخدمة في الواجهات ├── esp32/ # الشفرات البرمجية والبرمجيات الثابتة (.ino) لمتحكم ESP32 └── pubspec.yaml # حزم واعتماديات تطبيق Flutter 
+<div align="center">
 
-👨‍💻 المطور وحسابات التواصل (Developer & Contact)
+#  Ultimate Smart Car Telemetry & Control System
+# نظام التحكم الذكي للسيارات والقيادة المدمجة عن بعد
 
-تم تطوير وهندسة هذه المنظومة بواسطة المهندس رعد فهد عبده قائد الصلوي (Raad Al-Selwi):
+<p align="center">
+  <b> A Professional IoT Mobile & Desktop Control System Built for ESP32, Node-RED & Flutter </b>
+  <br>
+  <b>نظام إنترنت أشياء متطور للتحكم عن بعد بالسيارة عبر ESP32، MQTT، والذكاء الاصطناعي</b>
+</p>
 
-🐙 GitHub: @rdalselwi
+<!-- Shields Badges -->
+<p align="center">
+  <img src="https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter">
+  <img src="https://img.shields.io/badge/ESP32-Microcontroller-E7352C?style=for-the-badge&logo=espressif&logoColor=white" alt="ESP32">
+  <img src="https://img.shields.io/badge/Node--RED-IoT-8F0000?style=for-the-badge&logo=node-red&logoColor=white" alt="Node-RED">
+  <img src="https://img.shields.io/badge/MQTT-Mosquitto-37474F?style=for-the-badge&logo=eclipse-mosquitto&logoColor=white" alt="Mosquitto">
+  <img src="https://img.shields.io/badge/ThingSpeak-Cloud-0072C6?style=for-the-badge" alt="ThingSpeak">
+  <img src="https://img.shields.io/badge/Postman-API_Testing-FF6C37?style=for-the-badge&logo=postman&logoColor=white" alt="Postman">
+  <img src="https://img.shields.io/badge/Telegram-Bot-229ED9?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram">
+  <img src="https://img.shields.io/badge/WhatsApp-Integration-25D366?style=for-the-badge&logo=whatsapp&logoColor=white" alt="WhatsApp">
+  <img src="https://img.shields.io/badge/License-MIT-F39C12?style=for-the-badge" alt="License">
+</p>
 
-💼 LinkedIn: Raad Al-Selwi
+<p align="center">
+  <a href="https://github.com/rdalselwi"><img src="https://img.shields.io/badge/GitHub-rdalselwi-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"></a>
+  <a href="https://www.linkedin.com/in/raad-al-selwi-23202a421"><img src="https://img.shields.io/badge/LinkedIn-Raad%20Al--Selwi-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn"></a>
+  <a href="https://t.me/r1h_x"><img src="https://img.shields.io/badge/Telegram-@r1h__x-229ED9?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram"></a>
+  <a href="mailto:r.dalselwi@gmail.com"><img src="https://img.shields.io/badge/Email-r.dalselwi@gmail.com-EA4335?style=for-the-badge&logo=gmail&logoColor=white" alt="Email"></a>
+</p>
 
-✈️ Telegram: @r1h_x
+---
 
-📧 Email: r.dalselwi@gmail.com
+</div>
 
-📄 حقوق النشر والترخيص (License & Copyright)
+##  واجهات النظام (System Dashboards & UI)
 
-جميع الحقوق محفوظة © 2026 المهندس رعد فهد عبده قائد الصلوي (Raad Al-Selwi). All rights reserved © 2026 Raad Al-Selwi.
+<p align="center">
+  <img src="CAR.jpg" alt="Telemetry & Speedometer" width="30%" height="500">
+  &nbsp;&nbsp;
+  <img src="CAR1.jpg" alt="Car Controls & Lights" width="30%" height="500">
+  &nbsp;&nbsp;
+  <img src="CAR2.jpg" alt="AI Assistant Chatbot" width="30%" height="500">
+</p>
+<p align="center">
+  <img src="CAR3.jpg" alt="System Settings & Options" width="30%" height="500">
+  &nbsp;&nbsp;
+  <img src="CAR4.jpg" alt="Security Login & Gateway" width="30%" height="500">
+</p>
 
+<p align="center">
+  <img src="POST1.jpg" alt="Postman API Testing" width="48%" height="400">
+  &nbsp;&nbsp;
+  <img src="POST.jpg" alt="Postman API Testing 2" width="48%" height="400">
+</p>
+<p align="center">
+  <img src="THINK.jpg" alt="ThingSpeak Analytics" width="48%" height="400">
+  &nbsp;&nbsp;
+  <img src="NODE.jpg" alt="Node-RED Flows" width="48%" height="400">
+</p>
+
+---
+
+##  نبذة عن المشروع (About The Project)
+
+**Ultimate Smart Car Telemetry & Control System** هو نظام إنترنت أشياء متكامل مصمم للربط المباشر بين التطبيق والسيارة (Toyota Corolla) عبر متحكم **ESP32**. يتيح النظام مراقبة وتعديل حالة السيارة بالكامل لحظياً (Real-time telemetry)، بدءاً من تشغيل المحرك عن بعد، التحكم بالإضاءة والأبواب، مراقبة السرعة والحرارة (RPM & Temp)، مع تسجيل وتحليل البيانات عبر منصة **ThingSpeak**، وإجراء الفحوصات عبر **Postman**، وتلقي التنبيهات والأوامر عبر بوتات **Telegram** و **WhatsApp**، وصولاً إلى مساعد ذكي مدمج (مساعد رعد الصلوي الذكي) للتفاعل الصوتي والنصي مع منظومة السيارة عبر وسيط **Mosquitto MQTT** و **Wi-Fi**.
+
+---
+
+## ✨ المميزات والخصائص الرئيسية (Key Features)
+
+1. **بوابة الأمان والتحقق المتقدم:** حماية النظام عبر رمز السر (PIN Code) أو بصمة الإصبع مع واجهة دخول فاخرة تحاكي أحدث أنظمة السيارات الرياضية.
+2. **لوحة العدادات الحية (Live Telemetry):** عرض سرعة السيارة، عدد لفات المحرك (RPM)، درجة الحرارة، ومستوى الوقود بتصميم دائري عصري (Dark Glassmorphism).
+3. **التحكم الكامل عن بعد:** إمكانية تشغيل وإطفاء المحرك، قفل وفتح الأبواب وباب الشنطة، والتحكم بالأضواء الأمامية والإضاءة المحيطية (حمراء وزرقاء).
+4. **المساعد الذكي للسيارة (AI Assistant):** مساعد مدمج للإجابة على حالة السيارة، فحص الأعطال، وتدقيق الأمان بصوت ونصوص تفاعلية.
+5. **الربط السحابي والتحليل اللحظي (ThingSpeak):** إرسال قراءات الحساسات وحالة المركبة إلى منصة ThingSpeak لعرض المخططات البيانية وسجل البيانات التاريخي.
+6. **التكامل مع تطبيقات المراسلة (Telegram & WhatsApp):** إرسال تنبيهات الطوارئ والحماية الفورية وتلقي أوامر التحكم عبر البوتات.
+7. **إدارة الرسائل واختبار الواجهات:** استخدام وسيط Mosquitto لتبادل حزم MQTT بسرعات عالية، مع توثيق واختبار الـ APIs بالكامل عبر Postman.
+
+---
+
+## 🛠️ المكونات التقنية وتقنيات الربط (Tech Stack & Architecture)
+
+* **المتحكم الدقيق (Microcontroller):** ESP32 NodeMCU / ESP32-WROOM مع وحدة Wi-Fi مدمجة.
+* **بروتوكول ووسيط الاتصال:** بروتوكول MQTT عبر وسيط Mosquitto و HiveMQ، بالإضافة إلى WebSockets.
+* **المنصة السحابية (Cloud Analytics):** منصة ThingSpeak لتحليل وعرض قراءات التيليمتري بيانيًا.
+* **بيئة فحص وتجربة الـ APIs:** برنامج Postman لاختبار نقاط الاتصال وتدفق البيانات.
+* **البرمجيات الوسيطة (Middleware):** Node-RED Dashboard 2.0 لإدارة التدفقات وقراءات المستشعرات.
+* **تطبيق الواجهة (UI/UX):** تطوير عبر Flutter بتصميم Dark Glassmorphism مستوحى من أحدث منصات السيارات.
+* **أنظمة التنبيه والمراسلة:** بوتات تفاعلية عبر Telegram و WhatsApp لإرسال التنبيهات المباشرة وحالة المحرك.
+
+---
+
+## 📂 هيكلية ملفات المشروع (Project Directory Structure)
+
+يحتوي المستودع على المجلدات والملفات الأساسية التالية الخاصة بمشروع Flutter والـ ESP32:
+
+* `lib/` : يحتوي على الشيفرات البرمجية لتطبيق الـ Flutter وتصاميم الواجهات.
+* `assets/` : الموارد والأصول المستخدمة في التطبيق.
+* `android/`, `ios/`, `windows/`, `linux/`, `macos/`, `web/` : مجلدات الدعم الخاصة بالمنصات المختلفة.
+* `pubspec.yaml` : ملف إعدادات الحزم والاعتماديات الخاصة بالمشروع.
+* `esp32/` : ملفات الأكواد والبرمجيات الخاصة بمتحكم ESP32 (.ino).
+
+---
+
+## 👨‍💻 المطور وحسابات التواصل (Developer & Contact)
+
+تم تطوير وتصميم هذه المنظومة بواسطة المهندس رعد فهد عبده قائد الصلوي (Raad Al-Selwi):
+
+* 🐙 GitHub: @rdalselwi
+* 💼 LinkedIn: Raad Al-Selwi
+* ✈️ Telegram: @r1h_x
+* 📧 Email: r.dalselwi@gmail.com
+
+---
+
+## 📄 حقوق النشر والترخيص (License & Copyright)
+
+جميع الحقوق محفوظة © 2026 المهندس رعد فهد عبده قائد الصلوي (Raad Al-Selwi).
+
+All rights reserved © 2026 Raad Al-Selwi.
