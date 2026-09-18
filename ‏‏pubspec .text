@@ -1,0 +1,91 @@
+name: corolla_control
+description: "A new Flutter project for ESP32 Corolla Control."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  http: ^1.2.0
+  provider: ^6.1.2
+  shared_preferences: ^2.5.3 # تم تأكيد تفعيلها هنا لحفظ حالة التهيئة
+  local_auth: ^2.1.6 # مكتبة البصمة والتعرف على الوجه
+  url_launcher: ^6.3.1 # تم نقلها هنا لتتمكن من استخدامها داخل التطبيق بشكل صحيح
+  wifi_iot: ^0.3.19 # المكتبة الجديدة لفتح الواي فاي والاتصال التلقائي بشبكة الـ ESP32
+  permission_handler: ^12.0.3
+  geolocator: ^11.0.0
+  syncfusion_flutter_gauges: ^25.2.7
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/app_icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/app_icon.png"
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/app_icon.png
+    - assets/app_icon1.png
+    #    - assets/image_dark.png
+    #    - assets/image_light.png
+    - assets/start_btn_dark.png
+    - assets/start_btn_light.png
+    - assets/start_engine_btn_dark.png
+    - assets/start_engine_btn_light.png
+    - assets/off_car_btn_dark.png
+    - assets/off_car_btn_light.png
+    - assets/door1_handle_dark.png
+    - assets/door1_handle_light.png
+    - assets/door2_handle_dark.png
+    - assets/door2_handle_light.png
+    - assets/high_beam_icon_dark.png
+    - assets/high_beam_icon_light.png
+    - assets/headlights_icon_dark.png
+    - assets/headlights_icon_light.png
+    - assets/red_led_panel_dark.png
+    - assets/red_led_panel_light.png
+    - assets/blue_led_panel_dark.png
+    - assets/blue_led_panel_light.png
+
+    # --- الصور الـ 26 الجديدة للسيارات المضافة للمشروع ---
+    - assets/corolla_light.png
+    - assets/corolla_dark.png
+    - assets/camry_light.png
+    - assets/camry_dark.png
+    - assets/yaris_light.png
+    - assets/yaris_dark.png
+    - assets/prado_light.png
+    - assets/prado_dark.png
+    - assets/bmw_m5_light.png
+    - assets/bmw_m5_dark.png
+    - assets/bmw_m5_24_light.png
+    - assets/bmw_m5_24_dark.png
+    - assets/bmw_m3_light.png
+    - assets/bmw_m3_dark.png
+    - assets/mercedes_90_light.png
+    - assets/mercedes_90_dark.png
+    - assets/mercedes_24_light.png
+    - assets/mercedes_24_dark.png
+    - assets/tesla_light.png
+    - assets/tesla_dark.png
+    - assets/accent_17_light.png
+    - assets/accent_17_dark.png
+    - assets/santafe_24_light.png
+    - assets/santafe_24_dark.png
+    - assets/kia_rio_light.png
+    - assets/kia_rio_dark.png
